@@ -1,0 +1,140 @@
+
+import React, { useState } from 'react';
+import { Tab, UserRole } from './types';
+import Login from './components/Login';
+import Sidebar from './components/Sidebar';
+import Header from './components/Header';
+import Beranda from './components/Beranda';
+import OptInformation from './components/OptInformation';
+import Penyuluhan from './components/Penyuluhan';
+import Archive from './components/Archive';
+import Consultation from './components/Consultation';
+import UserManagement from './components/UserManagement';
+import FieldObservation from './components/FieldObservation';
+import WeatherWidget from './components/WeatherWidget';
+
+const App: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<Tab>(Tab.BERANDA);
+  const [user, setUser] = useState<string | null>(null);
+  const [userFullName, setUserFullName] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+
+  const handleLogin = (username: string, fullName: string, role: UserRole) => {
+    setIsAuthenticated(true);
+    setUser(username);
+    setUserFullName(fullName);
+    setUserRole(role);
+    setShowLoginModal(false);
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setUser(null);
+    setUserFullName(null);
+    setUserRole(null);
+    setActiveTab(Tab.BERANDA);
+  };
+
+  const isTabProtected = (tab: Tab) => {
+    return [Tab.PENGAMATAN, Tab.ARSIP, Tab.MANAJEMEN_USER].includes(tab);
+  };
+
+  const handleTabChange = (tab: Tab) => {
+    if (isTabProtected(tab) && !isAuthenticated) {
+      setShowLoginModal(true);
+    } else {
+      setActiveTab(tab);
+    }
+  };
+
+  return (
+    <div className="flex h-screen bg-[#FDFDFD] overflow-hidden selection:bg-green-100 selection:text-green-900">
+      {/* Sidebar - Polished Glassmorphism Look */}
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={handleTabChange} 
+        onLogout={handleLogout} 
+        currentUser={user} 
+        userRole={userRole}
+        isAuthenticated={isAuthenticated}
+        onLoginClick={() => setShowLoginModal(true)}
+      />
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header 
+          activeTab={activeTab} 
+          user={userFullName || user} 
+          role={userRole} 
+          onLogout={handleLogout}
+          isAuthenticated={isAuthenticated}
+          onLoginClick={() => setShowLoginModal(true)}
+        />
+
+        <main className="flex-1 overflow-y-auto px-4 md:px-10 py-10 scroll-smooth">
+          <div className="max-w-[1400px] mx-auto">
+            {activeTab === Tab.BERANDA && <Beranda userFullName={userFullName} />}
+            {activeTab === Tab.OPT && <OptInformation />}
+            {activeTab === Tab.PENYULUHAN && <Penyuluhan />}
+            {activeTab === Tab.KONSULTASI && <Consultation />}
+            {activeTab === Tab.CUACA && <WeatherWidget />}
+            
+            {/* Protected Content */}
+            {isAuthenticated && (
+              <>
+                {activeTab === Tab.PENGAMATAN && <FieldObservation />}
+                {activeTab === Tab.ARSIP && <Archive />}
+                {activeTab === Tab.MANAJEMEN_USER && <UserManagement />}
+              </>
+            )}
+
+            {/* Restricted Access State */}
+            {!isAuthenticated && isTabProtected(activeTab) && (
+              <div className="flex flex-col items-center justify-center py-32 text-center animate-in zoom-in-95 duration-500">
+                <div className="w-24 h-24 bg-amber-50 rounded-3xl flex items-center justify-center text-amber-500 mb-8 border border-amber-100 shadow-inner">
+                  <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Halaman Terproteksi</h2>
+                <p className="text-slate-500 max-w-lg mb-10 text-lg">Halaman ini berisi data administratif internal POPT BPP Nule. Silahkan login untuk melanjutkan akses.</p>
+                <button 
+                  onClick={() => setShowLoginModal(true)}
+                  className="px-10 py-4 bg-green-700 text-white font-black rounded-2xl shadow-2xl shadow-green-100 hover:bg-green-800 transition-all hover:scale-105 active:scale-95"
+                >
+                  Masuk Portal Petugas
+                </button>
+              </div>
+            )}
+          </div>
+        </main>
+
+        <footer className="bg-white border-t py-6 text-center shrink-0">
+          <p className="text-slate-400 text-sm font-medium tracking-wide">
+            &copy; 2026 <span className="text-green-700 font-bold">BPP Nule</span> • Sistem Informasi POPT Digital NTT
+          </p>
+        </footer>
+      </div>
+
+      {/* Modern Login Modal */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative w-full max-w-md shadow-[0_32px_64px_-15px_rgba(0,0,0,0.3)] animate-in slide-in-from-bottom-8 duration-500">
+            <button 
+              onClick={() => setShowLoginModal(false)}
+              className="absolute -top-12 right-0 text-white/80 hover:text-white transition-colors"
+            >
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <Login onLogin={handleLogin} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default App;
